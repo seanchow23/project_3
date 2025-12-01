@@ -132,8 +132,8 @@ public class FlightDao {
 	}
 	public List<Flight> getBestSellingFlights() {
 		
-		/* Get list of best selling flights
-		 */
+		/* Get list of best selling flights 
+		*/
 		
 		List<Flight> flights = new ArrayList<Flight>();
 		

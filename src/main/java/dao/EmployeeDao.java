@@ -10,7 +10,7 @@ public class EmployeeDao {
     /* Database Constants - UPDATE PASSWORD HERE */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "1234"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");

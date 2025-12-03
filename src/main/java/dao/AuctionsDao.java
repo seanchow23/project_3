@@ -1,61 +1,121 @@
 package dao;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-
 import model.Auctions;
 
 public class AuctionsDao {
-	
-	public List<Auctions> getLatestBid(int AccountNo, String AirlineID, int FlightNo, String SeatClass) {
+    
+    /* Database Constants */
+    private static final String URL = "jdbc:mysql://localhost:3306/project_2";
+    private static final String USER = "root";
+    private static final String PASSWORD = "1234"; // <--- UPDATE THIS
 
-		/*
-		 * This method fetches the latest auction details and returns it
-		 * using method parameters given, find the latest bid
-		 * The students code to fetch data from the database will be written here
-		 * The Auctions record is required to be encapsulated as a "Auctions" class object
-		 */
-		List<Auctions> auctions = new ArrayList<Auctions>();
-		/*Sample data begins*/
-		Auctions auction = new Auctions();
-		auction.setAccountNo(AccountNo);
-		auction.setAirlineID(AirlineID);
-		auction.setFlightNo(FlightNo);
-		auction.setSeatClass(SeatClass);
-		auction.setAccepted(true);
-		auction.setDate("2019-01-01");
-		auction.setNYOP(500);
-		auctions.add(auction);
-		/*Sample data ends*/
-		
-		return auctions;
-	}
-	
-	public List<Auctions> getAllBids(int AccountNo, String AirlineID, int FlightNo, String SeatClass) {
-		
-		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to get all bids given the parameters
-		 */
-		
-		List<Auctions> auctions = new ArrayList<Auctions>();
-			
-		/*Sample data begins*/
-		for (int i = 0; i < 4; i++) {
-			Auctions auction = new Auctions();
-			auction.setAccountNo(AccountNo);
-			auction.setAirlineID(AirlineID);
-			auction.setFlightNo(FlightNo);
-			auction.setSeatClass(SeatClass);
-			auction.setAccepted(true);
-			auction.setDate("2019-01-01");
-			auction.setNYOP(500);
-	
-			auctions.add(auction);
-				
-		}
-		/*Sample data ends*/
-						
-		return auctions;
-		
-	}
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+    
+    public List<Auctions> getLatestBid(int AccountNo, String AirlineID, int FlightNo, String SeatClass) {
+        /*
+         * Fetches the single most recent bid for a specific user and flight.
+         * Corresponds to Transaction 3.3.6 logic.
+         */
+        List<Auctions> auctions = new ArrayList<Auctions>();
+        
+        // Query to find the latest bid for this account/flight/class
+        // Note: We ignore LegNo here because the model/input doesn't support it.
+        String sql = "SELECT AccountNo, AirlineID, FlightNo, Class, Date, NYOP, Accepted " +
+                     "FROM Auctions " +
+                     "WHERE AccountNo = ? " +
+                     "  AND AirlineID = ? " +
+                     "  AND FlightNo = ? " +
+                     "  AND Class = ? " +
+                     "ORDER BY Date DESC " +
+                     "LIMIT 1";
+        
+        try (Connection con = getConnection();
+             PreparedStatement st = con.prepareStatement(sql)) {
+            
+            st.setInt(1, AccountNo);
+            st.setString(2, AirlineID);
+            st.setInt(3, FlightNo);
+            st.setString(4, SeatClass);
+            
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    Auctions auction = new Auctions();
+                    auction.setAccountNo(rs.getInt("AccountNo"));
+                    auction.setAirlineID(rs.getString("AirlineID"));
+                    auction.setFlightNo(rs.getInt("FlightNo"));
+                    auction.setSeatClass(rs.getString("Class"));
+                    
+                    // Convert Timestamp to String
+                    Timestamp ts = rs.getTimestamp("Date");
+                    if (ts != null) {
+                        auction.setDate(ts.toString());
+                    }
+                    
+                    auction.setNYOP(rs.getDouble("NYOP"));
+                    auction.setAccepted(rs.getBoolean("Accepted"));
+                    
+                    auctions.add(auction);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return auctions;
+    }
+    
+    public List<Auctions> getAllBids(int AccountNo, String AirlineID, int FlightNo, String SeatClass) {
+        /*
+         * Fetches the complete bid history for a specific user and flight.
+         * Corresponds to Transaction 3.3.7 logic (filtered by user).
+         */
+        List<Auctions> auctions = new ArrayList<Auctions>();
+        
+        String sql = "SELECT AccountNo, AirlineID, FlightNo, Class, Date, NYOP, Accepted " +
+                     "FROM Auctions " +
+                     "WHERE AccountNo = ? " +
+                     "  AND AirlineID = ? " +
+                     "  AND FlightNo = ? " +
+                     "  AND Class = ? " +
+                     "ORDER BY Date DESC";
+        
+        try (Connection con = getConnection();
+             PreparedStatement st = con.prepareStatement(sql)) {
+            
+            st.setInt(1, AccountNo);
+            st.setString(2, AirlineID);
+            st.setInt(3, FlightNo);
+            st.setString(4, SeatClass);
+            
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    Auctions auction = new Auctions();
+                    auction.setAccountNo(rs.getInt("AccountNo"));
+                    auction.setAirlineID(rs.getString("AirlineID"));
+                    auction.setFlightNo(rs.getInt("FlightNo"));
+                    auction.setSeatClass(rs.getString("Class"));
+                    
+                    Timestamp ts = rs.getTimestamp("Date");
+                    if (ts != null) {
+                        auction.setDate(ts.toString());
+                    }
+                    
+                    auction.setNYOP(rs.getDouble("NYOP"));
+                    auction.setAccepted(rs.getBoolean("Accepted"));
+                    
+                    auctions.add(auction);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return auctions;
+    }
 }

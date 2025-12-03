@@ -193,8 +193,138 @@ public class BookReservationDao {
     }
 
     public String bookMultiCityReservation(BookReservation bookRes) {
-        // ... (Logic is effectively the same as above, just repeated for multiple trips)
-        // For debugging purposes, stick to OneWay/RoundTrip testing first using the method above.
-        return "failure: Feature not implemented for debugging yet";
+        System.out.println("=== STARTING MULTI-CITY BOOKING TRANSACTION ===");
+        Connection con = null;
+        try {
+            con = getConnection();
+            con.setAutoCommit(false);
+
+            // 1. Validate Customer
+            int[] ids = getCustomerIds(con, bookRes.getPassEmail());
+            if (ids == null) return "failure: Customer email not found in database.";
+            int accountNo = ids[0];
+            int personId = ids[1];
+
+            // 2. Gather all flights and dates (Multi-city uses Trip1Date and Trip2Date)
+            int[] flightNumbers = {
+                bookRes.getFlightNum1(),
+                bookRes.getFlightNum2()
+            };
+            
+            String[] flightDates = {
+                bookRes.getTrip1Date(),
+                bookRes.getTrip2Date()
+            };
+
+            // 3. Calculate Total Fare (validate each flight exists)
+            double totalFare = 0.0;
+            int validFlightCount = 0;
+
+            for (int i = 0; i < flightNumbers.length; i++) {
+                if (flightNumbers[i] > 0) { // Only process non-zero flight numbers
+                    double fare = getFlightFare(con, bookRes.getAirlineID(), flightNumbers[i], bookRes.getSeatClass());
+                    
+                    if (fare == 0.0) {
+                        con.rollback();
+                        System.out.println("[ERROR] Flight " + (i + 1) + " Fare is 0.0. Transaction Aborted.");
+                        return "failure: Flight " + bookRes.getAirlineID() + " #" + flightNumbers[i] + 
+                               " with class '" + bookRes.getSeatClass() + "' not found.";
+                    }
+                    
+                    totalFare += fare;
+                    validFlightCount++;
+                    System.out.println("[DEBUG] Multi-City Flight " + (i + 1) + " - #" + flightNumbers[i] + ": $" + fare);
+                }
+            }
+
+            if (validFlightCount < 2) {
+                con.rollback();
+                System.out.println("[ERROR] Multi-city requires at least 2 flights.");
+                return "failure: Multi-city booking requires at least 2 flights.";
+            }
+
+            double bookingFee = totalFare * 0.10;
+            System.out.println("[DEBUG] Total Fare: $" + totalFare + ", Booking Fee: $" + bookingFee + 
+                             " (" + validFlightCount + " flights)");
+
+            // 4. Insert Reservation
+            int resrNo = generateResrNo(con);
+            String resSql = "INSERT INTO Reservation (ResrNo, ResrDate, BookingFee, TotalFare, RepSSN, AccountNo) " +
+                           "VALUES (?, NOW(), ?, ?, ?, ?)";
+            
+            try (PreparedStatement ps = con.prepareStatement(resSql)) {
+                ps.setInt(1, resrNo);
+                ps.setDouble(2, bookingFee);
+                ps.setDouble(3, totalFare);
+
+                // Safe Integer Parsing for RepSSN
+                if (bookRes.getRepSSN() != null && !bookRes.getRepSSN().trim().isEmpty()) {
+                    try {
+                        ps.setInt(4, Integer.parseInt(bookRes.getRepSSN()));
+                    } catch (NumberFormatException nfe) {
+                        System.out.println("[WARN] Invalid RepSSN format: " + bookRes.getRepSSN() + ". Setting to NULL.");
+                        ps.setNull(4, Types.INTEGER);
+                    }
+                } else {
+                    ps.setNull(4, Types.INTEGER);
+                }
+                
+                ps.setInt(5, accountNo);
+                ps.executeUpdate();
+                System.out.println("[DEBUG] Reservation Inserted. ID: " + resrNo);
+            }
+
+            // 5. Insert Includes for Each Flight
+            String incSql = "INSERT INTO Includes (ResrNo, AirlineID, FlightNo, LegNo, Date) " +
+                           "SELECT ?, L.AirlineID, L.FlightNo, L.LegNo, ? FROM Leg L " +
+                           "WHERE L.AirlineID = ? AND L.FlightNo = ? ORDER BY L.LegNo";
+
+            for (int i = 0; i < flightNumbers.length; i++) {
+                if (flightNumbers[i] > 0 && flightDates[i] != null && !flightDates[i].isEmpty()) {
+                    try (PreparedStatement ps = con.prepareStatement(incSql)) {
+                        ps.setInt(1, resrNo);
+                        ps.setString(2, flightDates[i]);
+                        ps.setString(3, bookRes.getAirlineID());
+                        ps.setInt(4, flightNumbers[i]);
+                        
+                        int legs = ps.executeUpdate();
+                        System.out.println("[DEBUG] Multi-City Flight " + (i + 1) + " - Legs Inserted: " + legs);
+
+                        if (legs == 0) {
+                            con.rollback();
+                            System.out.println("[ERROR] No legs found in Leg table for Flight #" + flightNumbers[i]);
+                            return "failure: Flight #" + flightNumbers[i] + 
+                                   " exists in Fare table but has no Legs defined in Database.";
+                        }
+                    }
+                }
+            }
+
+            // 6. Insert Passenger
+            String passSql = "INSERT INTO ReservationPassenger (ResrNo, Id, AccountNo, SeatNo, Class, Meal) " +
+                            "VALUES (?, ?, ?, ?, ?, ?)";
+            
+            try (PreparedStatement ps = con.prepareStatement(passSql)) {
+                ps.setInt(1, resrNo);
+                ps.setInt(2, personId);
+                ps.setInt(3, accountNo);
+                ps.setString(4, bookRes.getSeatNum());
+                ps.setString(5, bookRes.getSeatClass());
+                ps.setString(6, bookRes.getMealPref());
+                ps.executeUpdate();
+                System.out.println("[DEBUG] Passenger Inserted.");
+            }
+
+            con.commit();
+            System.out.println("=== MULTI-CITY TRANSACTION SUCCESSFUL ===");
+            return "success";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (con != null) try { con.rollback(); } catch (SQLException ex) {}
+            return "failure: " + e.getMessage();
+        } finally {
+            if (con != null) try { con.setAutoCommit(true); con.close(); } catch (SQLException ex) {}
+        }
     }
 }

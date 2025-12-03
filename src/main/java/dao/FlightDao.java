@@ -7,7 +7,7 @@ import model.Flight;
 
 public class FlightDao {
     
-    /* Database Constants - UPDATE PASSWORD HERE */
+    /* Database Constants */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
     private static final String PASSWORD = "1234"; // <--- UPDATE THIS
@@ -17,18 +17,20 @@ public class FlightDao {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
     
+    /**
+     * Transaction 3.1.3: Get all flights (Manager)
+     */
     public List<Flight> getAllFlights() {
-        /* * Transaction 3.1.5: Comprehensive Listing of All Flights 
-         */
-        List<Flight> flights = new ArrayList<Flight>();
+        List<Flight> flights = new ArrayList<>();
         
-        String sql = "SELECT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
-                     "F.MinLengthOfStay, F.MaxLengthOfStay " +
-                     "FROM Flight F";
+        String sql = "SELECT AirlineID, FlightNo, NoOfSeats, DaysOperating, " +
+                     "MinLengthOfStay, MaxLengthOfStay " +
+                     "FROM Flight " +
+                     "ORDER BY AirlineID, FlightNo";
         
         try (Connection con = getConnection();
-             PreparedStatement st = con.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             
             while (rs.next()) {
                 Flight flight = new Flight();
@@ -38,71 +40,71 @@ public class FlightDao {
                 flight.setDaysOperating(rs.getString("DaysOperating"));
                 flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
                 flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
-                flights.add(flight);            
+                flights.add(flight);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        return flights;
-    }
-
-    public List<Flight> mostActiveFlights() {
-        /* * Transaction 3.1.10: Produce List of Most Active Flights
-         * Sorts flights by total number of reservations.
-         */
-        List<Flight> flights = new ArrayList<Flight>();
-        
-        String sql = "SELECT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
-                     "F.MinLengthOfStay, F.MaxLengthOfStay, COUNT(DISTINCT I.ResrNo) AS TotalReservations " +
-                     "FROM Flight F " +
-                     "LEFT JOIN Includes I ON F.AirlineID = I.AirlineID AND F.FlightNo = I.FlightNo " +
-                     "GROUP BY F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, F.MinLengthOfStay, F.MaxLengthOfStay " +
-                     "ORDER BY TotalReservations DESC";
-        
-        try (Connection con = getConnection();
-             PreparedStatement st = con.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
-            
-            while (rs.next()) {
-                Flight flight = new Flight();
-                flight.setAirlineID(rs.getString("AirlineID"));
-                flight.setFlightNo(rs.getInt("FlightNo"));
-                flight.setNumOfSeats(rs.getInt("NoOfSeats"));
-                flight.setDaysOperating(rs.getString("DaysOperating"));
-                flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
-                flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
-                // Map the calculated count to NumReservations
-                flight.setNumReservations(rs.getInt("TotalReservations"));
-                flights.add(flight);            
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
         return flights;
     }
     
+    /**
+     * Transaction 3.1.9: Most active flights (Manager)
+     */
+    public List<Flight> mostActiveFlights() {
+        List<Flight> flights = new ArrayList<>();
+        
+        String sql = "SELECT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay, " +
+                     "COUNT(DISTINCT I.ResrNo) AS NumReservations " +
+                     "FROM Flight F " +
+                     "LEFT JOIN Includes I ON F.AirlineID = I.AirlineID AND F.FlightNo = I.FlightNo " +
+                     "GROUP BY F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay " +
+                     "ORDER BY NumReservations DESC " +
+                     "LIMIT 10";
+        
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                Flight flight = new Flight();
+                flight.setAirlineID(rs.getString("AirlineID"));
+                flight.setFlightNo(rs.getInt("FlightNo"));
+                flight.setNumOfSeats(rs.getInt("NoOfSeats"));
+                flight.setDaysOperating(rs.getString("DaysOperating"));
+                flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
+                flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
+                flight.setNumReservations(rs.getInt("NumReservations"));
+                flights.add(flight);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return flights;
+    }
+    
+    /**
+     * Transaction 3.1.10: Flights for a given airport (Manager)
+     */
     public List<Flight> getFlightsForAirport(String airport) {
-        /*
-         * Adapted from Transaction 3.1.12
-         * Returns distinct Flight objects that have a leg arriving at OR departing from the given airport.
-         */
-        List<Flight> flights = new ArrayList<Flight>();
+        List<Flight> flights = new ArrayList<>();
         
         String sql = "SELECT DISTINCT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
                      "F.MinLengthOfStay, F.MaxLengthOfStay " +
                      "FROM Flight F " +
                      "JOIN Leg L ON F.AirlineID = L.AirlineID AND F.FlightNo = L.FlightNo " +
-                     "WHERE L.DepAirportID = ? OR L.ArrAirportID = ?";
+                     "WHERE L.DepAirportID = ? OR L.ArrAirportID = ? " +
+                     "ORDER BY F.AirlineID, F.FlightNo";
         
         try (Connection con = getConnection();
-             PreparedStatement st = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql)) {
             
-            st.setString(1, airport);
-            st.setString(2, airport);
+            ps.setString(1, airport);
+            ps.setString(2, airport);
             
-            try (ResultSet rs = st.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Flight flight = new Flight();
                     flight.setAirlineID(rs.getString("AirlineID"));
@@ -111,100 +113,35 @@ public class FlightDao {
                     flight.setDaysOperating(rs.getString("DaysOperating"));
                     flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
                     flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
-                    flights.add(flight);            
+                    flights.add(flight);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
         return flights;
-    }
-
-    public List<Flight> getOnTimeFlights() {
-        /*
-         * Transaction 3.1.13
-         * Note from SQL: "This query assumes all flights are on-time" due to schema limitations.
-         */
-        // Simply returns all flights, assuming they are on time.
-        return getAllFlights();
-    }
-
-    public List<Flight> getDelayedFlights() {
-        /*
-         * Inverse of Transaction 3.1.13
-         * Since the schema has no status column and defaults to On-Time, 
-         * this returns an empty list or could implement specific logic if schema changes.
-         */
-        return new ArrayList<Flight>();
     }
     
-    public List<Flight> getCustomerFlightSuggestions(int accountNo) {
-        /* * Transaction 3.3.11: View Personalized Flight Suggestion List
-         * Suggests flights based on routes the customer has flown before.
-         */
-        List<Flight> flights = new ArrayList<Flight>();
+    /**
+     * Transaction 3.1.12: Get on-time flights
+     * Note: This requires a comparison between scheduled and actual times
+     * For now, returning all flights (implement logic based on your schema)
+     */
+    public List<Flight> getOnTimeFlights() {
+        List<Flight> flights = new ArrayList<>();
         
-        // This query finds the most frequent routes for a customer and recommends flights on those routes
-        String sql = "WITH CustomerRoutes AS ( " +
-                     "    SELECT L.DepAirportID, L.ArrAirportID, COUNT(*) AS TimesFlown " +
-                     "    FROM Reservation R " +
-                     "    JOIN Includes I ON R.ResrNo = I.ResrNo " +
-                     "    JOIN Leg L ON I.AirlineID = L.AirlineID AND I.FlightNo = L.FlightNo AND I.LegNo = L.LegNo " +
-                     "    WHERE R.AccountNo = ? " +
-                     "    GROUP BY L.DepAirportID, L.ArrAirportID " +
-                     ") " +
-                     "SELECT DISTINCT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
-                     "F.MinLengthOfStay, F.MaxLengthOfStay, CR.TimesFlown " +
-                     "FROM Flight F " +
-                     "JOIN Leg L ON F.AirlineID = L.AirlineID AND F.FlightNo = L.FlightNo " +
-                     "JOIN CustomerRoutes CR ON L.DepAirportID = CR.DepAirportID AND L.ArrAirportID = CR.ArrAirportID " +
-                     "ORDER BY CR.TimesFlown DESC";
+        // TODO: Implement logic to determine on-time flights
+        // This would require comparing Leg.DepTime with actual departure times
+        // For now, returning all flights as placeholder
+        
+        String sql = "SELECT AirlineID, FlightNo, NoOfSeats, DaysOperating, " +
+                     "MinLengthOfStay, MaxLengthOfStay " +
+                     "FROM Flight " +
+                     "ORDER BY AirlineID, FlightNo";
         
         try (Connection con = getConnection();
-             PreparedStatement st = con.prepareStatement(sql)) {
-            
-            st.setInt(1, accountNo);
-            
-            try (ResultSet rs = st.executeQuery()) {
-                while (rs.next()) {
-                    Flight flight = new Flight();
-                    flight.setAirlineID(rs.getString("AirlineID"));
-                    flight.setFlightNo(rs.getInt("FlightNo"));
-                    flight.setNumOfSeats(rs.getInt("NoOfSeats"));
-                    flight.setDaysOperating(rs.getString("DaysOperating"));
-                    flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
-                    flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
-                    // We can reuse NumReservations to store the relevance score (TimesFlown)
-                    flight.setNumReservations(rs.getInt("TimesFlown"));
-                    flights.add(flight);            
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        return flights;
-    }
-
-    public List<Flight> getBestSellingFlights() {
-        /* * Transaction 3.3.10: View Best-Seller List of Flights
-         * Similar to mostActiveFlights but specifically for the customer view
-         */
-        List<Flight> flights = new ArrayList<Flight>();
-        
-        String sql = "SELECT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
-                     "F.MinLengthOfStay, F.MaxLengthOfStay, COUNT(DISTINCT R.ResrNo) AS TotalBookings " +
-                     "FROM Flight F " +
-                     "JOIN Includes I ON F.AirlineID = I.AirlineID AND F.FlightNo = I.FlightNo " +
-                     "JOIN Reservation R ON I.ResrNo = R.ResrNo " +
-                     "GROUP BY F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, F.MinLengthOfStay, F.MaxLengthOfStay " +
-                     "HAVING TotalBookings > 0 " +
-                     "ORDER BY TotalBookings DESC";
-        
-        try (Connection con = getConnection();
-             PreparedStatement st = con.prepareStatement(sql);
-             ResultSet rs = st.executeQuery()) {
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             
             while (rs.next()) {
                 Flight flight = new Flight();
@@ -214,13 +151,140 @@ public class FlightDao {
                 flight.setDaysOperating(rs.getString("DaysOperating"));
                 flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
                 flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
-                flight.setNumReservations(rs.getInt("TotalBookings"));
-                flights.add(flight);            
+                flights.add(flight);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return flights;
+    }
+    
+    /**
+     * Transaction 3.1.12: Get delayed flights
+     * Note: This requires a comparison between scheduled and actual times
+     * For now, returning empty list (implement logic based on your schema)
+     */
+    public List<Flight> getDelayedFlights() {
+        List<Flight> flights = new ArrayList<>();
         
+        // TODO: Implement logic to determine delayed flights
+        // This would require comparing Leg.DepTime with actual departure times
+        // Your schema may not have actual departure time data
+        
+        String sql = "SELECT AirlineID, FlightNo, NoOfSeats, DaysOperating, " +
+                     "MinLengthOfStay, MaxLengthOfStay " +
+                     "FROM Flight " +
+                     "WHERE 1=0"; // Returns empty for now
+        
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                Flight flight = new Flight();
+                flight.setAirlineID(rs.getString("AirlineID"));
+                flight.setFlightNo(rs.getInt("FlightNo"));
+                flight.setNumOfSeats(rs.getInt("NoOfSeats"));
+                flight.setDaysOperating(rs.getString("DaysOperating"));
+                flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
+                flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
+                flights.add(flight);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return flights;
+    }
+    
+    /**
+     * Transaction 3.2.4: Personalized flight suggestions based on customer's past reservations
+     */
+    public List<Flight> getCustomerFlightSuggestions(int accountNo) {
+        List<Flight> flights = new ArrayList<>();
+        
+        // Get flights to airports the customer has previously visited
+        String sql = "SELECT DISTINCT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay, " +
+                     "COUNT(DISTINCT I2.ResrNo) AS NumReservations " +
+                     "FROM Flight F " +
+                     "JOIN Leg L ON F.AirlineID = L.AirlineID AND F.FlightNo = L.FlightNo " +
+                     "LEFT JOIN Includes I2 ON F.AirlineID = I2.AirlineID AND F.FlightNo = I2.FlightNo " +
+                     "WHERE L.ArrAirportID IN ( " +
+                     "    SELECT DISTINCT L2.ArrAirportID " +
+                     "    FROM Reservation R " +
+                     "    JOIN Includes I ON R.ResrNo = I.ResrNo " +
+                     "    JOIN Leg L2 ON I.AirlineID = L2.AirlineID AND I.FlightNo = L2.FlightNo " +
+                     "    WHERE R.AccountNo = ? " +
+                     ") " +
+                     "AND F.FlightNo NOT IN ( " +
+                     "    SELECT I3.FlightNo FROM Includes I3 " +
+                     "    JOIN Reservation R2 ON I3.ResrNo = R2.ResrNo " +
+                     "    WHERE R2.AccountNo = ? " +
+                     ") " +
+                     "GROUP BY F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay " +
+                     "ORDER BY NumReservations DESC " +
+                     "LIMIT 10";
+        
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setInt(1, accountNo);
+            ps.setInt(2, accountNo);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Flight flight = new Flight();
+                    flight.setAirlineID(rs.getString("AirlineID"));
+                    flight.setFlightNo(rs.getInt("FlightNo"));
+                    flight.setNumOfSeats(rs.getInt("NoOfSeats"));
+                    flight.setDaysOperating(rs.getString("DaysOperating"));
+                    flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
+                    flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
+                    flight.setNumReservations(rs.getInt("NumReservations"));
+                    flights.add(flight);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return flights;
+    }
+    
+    /**
+     * Transaction 3.3.7: Best-seller flights (most booked)
+     */
+    public List<Flight> getBestSellingFlights() {
+        List<Flight> flights = new ArrayList<>();
+        
+        String sql = "SELECT F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay, " +
+                     "COUNT(DISTINCT I.ResrNo) AS NumReservations " +
+                     "FROM Flight F " +
+                     "LEFT JOIN Includes I ON F.AirlineID = I.AirlineID AND F.FlightNo = I.FlightNo " +
+                     "GROUP BY F.AirlineID, F.FlightNo, F.NoOfSeats, F.DaysOperating, " +
+                     "F.MinLengthOfStay, F.MaxLengthOfStay " +
+                     "ORDER BY NumReservations DESC " +
+                     "LIMIT 10";
+        
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                Flight flight = new Flight();
+                flight.setAirlineID(rs.getString("AirlineID"));
+                flight.setFlightNo(rs.getInt("FlightNo"));
+                flight.setNumOfSeats(rs.getInt("NoOfSeats"));
+                flight.setDaysOperating(rs.getString("DaysOperating"));
+                flight.setMinLengthOfStay(rs.getInt("MinLengthOfStay"));
+                flight.setMaxLengthOfStay(rs.getInt("MaxLengthOfStay"));
+                flight.setNumReservations(rs.getInt("NumReservations"));
+                flights.add(flight);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return flights;
     }
 }

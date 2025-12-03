@@ -1,4 +1,5 @@
 package dao;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,11 +126,9 @@ public class FlightReservationsDao {
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
                     FlightReservations res = new FlightReservations();
-                    // We treat 'ResrNo' as a placeholder ID for the summary row
-                    res.setResrNo(1); 
+                    res.setResrNo(1); // Placeholder
                     double rev = rs.getDouble("TotalRevenue");
                     res.setRevenue(rev);
-                    // Add dummy data for required fields if necessary
                     revenueList.add(res);
                 }
             }
@@ -183,11 +182,10 @@ public class FlightReservationsDao {
         String sql = "SELECT R.ResrNo, R.ResrDate, R.TotalFare, R.BookingFee, R.RepSSN, R.AccountNo " +
                      "FROM Reservation R " +
                      "JOIN Includes I ON R.ResrNo = I.ResrNo " +
-                     "JOIN Leg L ON I.AirlineID = L.AirlineID AND I.FlightNo = L.FlightNo AND I.LegNo = L.LegNo " +
                      "WHERE R.AccountNo = ? " +
-                     "GROUP BY R.ResrNo " +
-                     "HAVING MIN(L.DepTime) >= NOW() " +
-                     "ORDER BY MIN(L.DepTime)";
+                     "GROUP BY R.ResrNo, R.ResrDate, R.TotalFare, R.BookingFee, R.RepSSN, R.AccountNo " +
+                     "HAVING MIN(I.Date) >= CURDATE() " +
+                     "ORDER BY MIN(I.Date)";
 
         try (Connection con = getConnection();
              PreparedStatement st = con.prepareStatement(sql)) {
@@ -296,4 +294,4 @@ public class FlightReservationsDao {
             }
         }
     }
-}
+} 

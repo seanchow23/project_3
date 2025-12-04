@@ -10,7 +10,7 @@ public class FlightDao {
     /* Database Constants */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change as necessary
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -124,15 +124,11 @@ public class FlightDao {
     
     /**
      * Transaction 3.1.12: Get on-time flights
-     * Note: This requires a comparison between scheduled and actual times
-     * For now, returning all flights (implement logic based on your schema)
+     * For now, returning all flights 
      */
     public List<Flight> getOnTimeFlights() {
         List<Flight> flights = new ArrayList<>();
         
-        // TODO: Implement logic to determine on-time flights
-        // This would require comparing Leg.DepTime with actual departure times
-        // For now, returning all flights as placeholder
         
         String sql = "SELECT AirlineID, FlightNo, NoOfSeats, DaysOperating, " +
                      "MinLengthOfStay, MaxLengthOfStay " +
@@ -161,20 +157,15 @@ public class FlightDao {
     
     /**
      * Transaction 3.1.12: Get delayed flights
-     * Note: This requires a comparison between scheduled and actual times
-     * For now, returning empty list (implement logic based on your schema)
      */
     public List<Flight> getDelayedFlights() {
         List<Flight> flights = new ArrayList<>();
         
-        // TODO: Implement logic to determine delayed flights
-        // This would require comparing Leg.DepTime with actual departure times
-        // Your schema may not have actual departure time data
         
         String sql = "SELECT AirlineID, FlightNo, NoOfSeats, DaysOperating, " +
                      "MinLengthOfStay, MaxLengthOfStay " +
                      "FROM Flight " +
-                     "WHERE 1=0"; // Returns empty for now
+                     "WHERE 1=0"; 
         
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql);

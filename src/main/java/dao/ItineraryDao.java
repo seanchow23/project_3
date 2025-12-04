@@ -10,7 +10,7 @@ public class ItineraryDao {
     /* Database Constants */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change as necessary
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -19,7 +19,7 @@ public class ItineraryDao {
     
     public List<Itinerary> getItineraryForReservation(int resrNo) {
         /*
-         * Implements Transaction 3.3.5 (Simplified for Itinerary Model)
+         * Implements Transaction 3.3.5 
          * Fetches all flight legs associated with the given reservation number.
          */
         List<Itinerary> itineraryList = new ArrayList<Itinerary>();
@@ -51,8 +51,6 @@ public class ItineraryDao {
                     it.setArrival(rs.getString("ArrAirportID"));
                     
                     // Map Times (SQL DateTime -> String)
-                    // You can format this using SimpleDateFormat if needed, 
-                    // but getString() usually provides a readable default "YYYY-MM-DD HH:MM:SS"
                     String depTime = rs.getString("DepTime");
                     if (depTime != null && depTime.length() > 2) {
                         it.setDepTime(depTime.substring(0, depTime.length() - 2)); // Trims .0 if present

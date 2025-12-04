@@ -10,7 +10,7 @@ public class EmployeeDao {
     /* Database Constants - UPDATE PASSWORD HERE */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change as necessary
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -20,14 +20,14 @@ public class EmployeeDao {
 	public String addEmployee(Employee employee) {
         /*
          * Implementation of Transaction 3.1.1: Add Employee
-         * Handles the dependencies between Person and Employee tables.
+         * handles the dependencies between Person and Employee tables.
          */
         Connection con = null;
         try {
             con = getConnection();
             con.setAutoCommit(false); // Start Transaction
 
-            // 1. AUTO-GENERATE Person ID
+            // 1. GENERATE Person ID
             int newPersonId = 1;
             try (Statement st = con.createStatement();
                  ResultSet rs = st.executeQuery("SELECT MAX(Id) FROM Person")) {
@@ -52,8 +52,8 @@ public class EmployeeDao {
                 ps1.executeUpdate();
             }
 
-            // 3. Insert into Employee table
-            // Note: SSN is String in Model, but INT in Database
+            // 3. insert into Employee table
+            // SSN is String in Model, but INT in Database
             String insertEmployee = "INSERT INTO Employee (Id, SSN, IsManager, StartDate, HourlyRate) " +
                                     "VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement ps2 = con.prepareStatement(insertEmployee)) {
@@ -199,10 +199,10 @@ public class EmployeeDao {
             }
 
             // 4. Delete from Person table
-            // Note: Only delete from Person if they are NOT also a Customer (check dependencies)
-            // For this project scope, we assume straightforward deletion is requested.
+            //  only delete from Person if they are NOT also a Customer (check dependencies)
+            // for this project scope, we assume straightforward deletion is requested.
             if (personId > 0) {
-                 // Check if this person is also a customer
+                 // check if this person is also a customer
                 boolean isCustomer = false;
                 try (PreparedStatement psCheck = con.prepareStatement("SELECT AccountNo FROM Customer WHERE Id = ?")) {
                     psCheck.setInt(1, personId);
@@ -236,14 +236,14 @@ public class EmployeeDao {
 
 	public List<Employee> getEmployees() {
         /*
-         * Fetches all employees by joining Person and Employee tables.
+         * fetches all employees by joining Person and Employee tables.
          */
 		List<Employee> employees = new ArrayList<Employee>();
         String sql = "SELECT P.FirstName, P.LastName, P.Address, P.City, P.State, P.ZipCode, P.Phone, " + 
                      "E.SSN, E.IsManager, E.StartDate, E.HourlyRate, C.Email " + 
                      "FROM Employee E " +
                      "JOIN Person P ON E.Id = P.Id " +
-                     "LEFT JOIN Customer C ON P.Id = C.Id"; // Left Join to get Email if they are also a customer
+                     "LEFT JOIN Customer C ON P.Id = C.Id"; // left Join to get Email if they are also a customer
 
 		try (Connection con = getConnection();
              PreparedStatement st = con.prepareStatement(sql);
@@ -257,7 +257,7 @@ public class EmployeeDao {
 				employee.setCity(rs.getString("City"));
 				employee.setState(rs.getString("State"));
 				employee.setZipCode(rs.getInt("ZipCode"));
-				employee.setEmail(rs.getString("Email")); // Will be null if not a customer
+				employee.setEmail(rs.getString("Email")); // will be null if not a customer
 				employee.setSSN(String.valueOf(rs.getInt("SSN"))); // Convert DB Int to Model String
 				employee.setStartDate(rs.getString("StartDate"));
 				employee.setHourlyRate(rs.getFloat("HourlyRate"));
@@ -273,7 +273,7 @@ public class EmployeeDao {
 
 	public Employee getEmployee(String SSN) {
         /*
-         * Fetches a single employee by SSN.
+         * fetches a single employee by SSN.
          */
 		Employee employee = new Employee();
         String sql = "SELECT P.FirstName, P.LastName, P.Address, P.City, P.State, P.ZipCode, P.Phone, " + 
@@ -310,7 +310,7 @@ public class EmployeeDao {
 	
 	public Employee getHighestRevenueEmployee() {
         /*
-         * Implementation of Transaction 3.1.8: Highest Revenue Customer Rep
+         * implementation of Transaction 3.1.8: Highest Revenue Customer Rep
          */
 		Employee employee = new Employee();
         String sql = "SELECT E.SSN, P.FirstName, P.LastName, E.HourlyRate, " + 
@@ -332,7 +332,7 @@ public class EmployeeDao {
 				employee.setFirstName(rs.getString("FirstName"));
 				employee.setLastName(rs.getString("LastName"));
 				employee.setHourlyRate(rs.getFloat("HourlyRate"));
-                // Revenue isn't in the Employee model, so we only return the ID/Name
+                // Revenue is not in the Employee model, so we only return the ID/Name
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -342,7 +342,7 @@ public class EmployeeDao {
 
 	public String getEmployeeID(String username) {
         /*
-         * Fetches Employee's SSN based on email (if they are also a customer/have email recorded).
+         * Fetches Employee's SSN based on email 
          */
 		String ssn = null;
         String sql = "SELECT E.SSN FROM Employee E " +

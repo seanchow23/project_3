@@ -10,7 +10,7 @@ public class AuctionsDao {
     /* Database Constants */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- our password change AS NECESSARY
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -24,7 +24,7 @@ public class AuctionsDao {
          */
         List<Auctions> auctions = new ArrayList<Auctions>();
         
-        // Query to find the latest bid for this account/flight/class
+        // query to find the latest bid for this account/flight/class
         // Note: We ignore LegNo here because the model/input doesn't support it.
         String sql = "SELECT AccountNo, AirlineID, FlightNo, Class, Date, NYOP, Accepted " +
                      "FROM Auctions " +

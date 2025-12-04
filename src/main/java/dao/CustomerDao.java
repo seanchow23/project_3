@@ -10,7 +10,7 @@ public class CustomerDao {
     /* Database Constants - UPDATE PASSWORD HERE */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change this as necessary 
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -143,8 +143,7 @@ public class CustomerDao {
     
     public String deleteCustomer(int accountNo) {
         /*
-         * UPDATED LOGIC FOR SAMPLE DATA:
-         * We MUST delete from Auctions, Includes, and ReservationPassenger before deleting the Customer.
+         * We  delete from Auctions, Includes, and ReservationPassenger before deleting the Customer.
          */
         Connection con = null;
         try {
@@ -162,13 +161,13 @@ public class CustomerDao {
                 }
             }
             
-            // 2. DELETE FROM AUCTIONS (Crucial for Sample Data)
+            // 2. DELETE FROM AUCTIONS
             try (PreparedStatement psAuc = con.prepareStatement("DELETE FROM Auctions WHERE AccountNo = ?")) {
                 psAuc.setInt(1, accountNo);
                 psAuc.executeUpdate();
             }
 
-            // 3. DELETE OWNED RESERVATIONS (Crucial for Sample Data)
+            // 3. DELETE OWNED RESERVATIONS 
             // Get list of reservations owned by this customer
             String getReservationsSql = "SELECT ResrNo FROM Reservation WHERE AccountNo = ?";
             List<Integer> reservationIds = new ArrayList<>();
@@ -253,15 +252,14 @@ public class CustomerDao {
 
     public String addCustomer(Customer customer) {
         /*
-         * UPDATED LOGIC FOR UI:
-         * The UI does NOT send AccountNo. We must generate it manually.
+         The UI does NOT send AccountNo. We must generate it manually.
          */
         Connection con = null;
         try {
             con = getConnection();
             con.setAutoCommit(false);
 
-            // 1. AUTO-GENERATE Person ID (Id)
+            // 1. GENERATE Person ID 
             int newPersonId = 1;
             try (Statement st = con.createStatement();
                  ResultSet rs = st.executeQuery("SELECT MAX(Id) FROM Person")) {
@@ -270,7 +268,7 @@ public class CustomerDao {
                 }
             }
             
-            // 2. AUTO-GENERATE Account Number (Since UI form does not provide it)
+            // 2. GENERATE Account Number 
             int newAccountNo = 1;
             try (Statement st = con.createStatement();
                  ResultSet rs = st.executeQuery("SELECT MAX(AccountNo) FROM Customer")) {
@@ -301,7 +299,7 @@ public class CustomerDao {
                                     "VALUES (?, ?, ?, NOW(), 0, ?)";
             try (PreparedStatement ps2 = con.prepareStatement(insertCustomer)) {
                 ps2.setInt(1, newPersonId);
-                ps2.setInt(2, newAccountNo); // <--- USING GENERATED ID
+                ps2.setInt(2, newAccountNo); //  USING GENERATED ID
                 ps2.setString(3, customer.getEmail());
                 ps2.setString(4, customer.getCreditCard());
                 ps2.executeUpdate();
@@ -311,7 +309,7 @@ public class CustomerDao {
             String insertPassenger = "INSERT INTO Passenger (Id, AccountNo) VALUES (?, ?)";
             try (PreparedStatement ps3 = con.prepareStatement(insertPassenger)) {
                 ps3.setInt(1, newPersonId);
-                ps3.setInt(2, newAccountNo); // <--- USING GENERATED ID
+                ps3.setInt(2, newAccountNo); // USING GENERATED ID
                 ps3.executeUpdate();
             }
 

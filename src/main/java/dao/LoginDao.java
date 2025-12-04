@@ -10,7 +10,7 @@ public class LoginDao {
 	 */
 		private static final String URL = "jdbc:mysql://localhost:3306/project_2";
 	    private static final String USER = "root";
-	    private static final String PASSWORD = "Master442713"; //
+	    private static final String PASSWORD = "Master442713"; //change as necessary 
 	
 	   
 	    private Connection getConnection() throws SQLException, ClassNotFoundException {
@@ -36,7 +36,7 @@ public class LoginDao {
 	             PreparedStatement ps = con.prepareStatement(
 	                 "SELECT Username, Role FROM Login WHERE Username = ? AND Password = ?")) {
 	           
-	            System.out.println("✅ Database connection established");
+	            System.out.println("Database connection established");
 	           
 	            // Set parameters
 	            ps.setString(1, username);
@@ -52,20 +52,20 @@ public class LoginDao {
 	                login.setUsername(rs.getString("Username"));
 	                login.setRole(rs.getString("Role"));
 	               
-	                System.out.println("✅ Login SUCCESSFUL");
+	                System.out.println(" Login SUCCESSFUL");
 	                System.out.println("Role: " + login.getRole());
 	            } else {
 	                // Invalid credentials
-	                System.out.println("❌ Login FAILED - Invalid credentials");
+	                System.out.println(" Login FAILED - Invalid credentials");
 	            }
 	           
 	            rs.close();
 	           
 	        } catch (ClassNotFoundException e) {
-	            System.err.println("❌ ERROR: MySQL JDBC Driver not found!");
+	            System.err.println(" ERROR: MySQL JDBC Driver not found!");
 	            e.printStackTrace();
 	        } catch (SQLException e) {
-	            System.err.println("❌ ERROR: Database connection/query failed!");
+	            System.err.println(" ERROR: Database connection/query failed!");
 	            System.err.println("Check your database name, username, and password");
 	            e.printStackTrace();
 	        }
@@ -81,7 +81,7 @@ public class LoginDao {
 	        // Input validation
 	        if (login == null || login.getUsername() == null ||
 	            login.getPassword() == null || login.getRole() == null) {
-	            System.err.println("❌ Cannot add user: Login object or fields are null");
+	            System.err.println(" Cannot add user: Login object or fields are null");
 	            return "failure";
 	        }
 	       
@@ -103,19 +103,19 @@ public class LoginDao {
 	            int rowsInserted = ps.executeUpdate();
 	           
 	            if (rowsInserted > 0) {
-	                System.out.println("✅ Login account created successfully");
+	                System.out.println("Login account created successfully");
 	                return "success";
 	            } else {
-	                System.out.println("❌ Failed to create login account");
+	                System.out.println(" Failed to create login account");
 	                return "failure";
 	            }
 	           
 	        } catch (ClassNotFoundException e) {
-	            System.err.println("❌ ERROR: MySQL JDBC Driver not found!");
+	            System.err.println(" ERROR: MySQL JDBC Driver not found!");
 	            e.printStackTrace();
 	            return "failure";
 	        } catch (SQLException e) {
-	            System.err.println("❌ ERROR: Failed to insert login user");
+	            System.err.println(" ERROR: Failed to insert login user");
 	           
 	            // Check for duplicate username
 	            if (e.getMessage().contains("Duplicate entry")) {

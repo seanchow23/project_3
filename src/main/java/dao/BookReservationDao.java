@@ -50,7 +50,6 @@ public class BookReservationDao {
     private double getFlightFare(Connection con, String airline, int flightNo, String seatClass) throws SQLException {
         System.out.println("[DEBUG] Calculating Fare for: " + airline + " #" + flightNo + " (" + seatClass + ")");
         
-        // Note: Using LOWER() to make the check case-insensitive (Economy == economy)
         String sql = "SELECT FareAmount FROM Fare " +
                      "WHERE AirlineID = ? AND FlightNo = ? " +
                      "AND LOWER(Class) = LOWER(?) AND FareType = 'OneWay'";
@@ -184,7 +183,7 @@ public class BookReservationDao {
             return "success";
 
         } catch (Exception e) {
-            e.printStackTrace(); // LOOK AT ECLIPSE CONSOLE FOR THIS
+            e.printStackTrace(); // CHECK CLIPSE CONSOLE 
             if (con != null) try { con.rollback(); } catch (SQLException ex) {}
             return "failure: " + e.getMessage();
         } finally {
@@ -201,11 +200,11 @@ public class BookReservationDao {
 
             // 1. Validate Customer
             int[] ids = getCustomerIds(con, bookRes.getPassEmail());
-            if (ids == null) return "failure: Customer email not found in database.";
+            if (ids == null) return "failure: customer email not found in database.";
             int accountNo = ids[0];
             int personId = ids[1];
 
-            // 2. Gather all flights and dates (Multi-city uses Trip1Date and Trip2Date)
+            // 2. get all flights and dates 
             int[] flightNumbers = {
                 bookRes.getFlightNum1(),
                 bookRes.getFlightNum2()
@@ -221,7 +220,7 @@ public class BookReservationDao {
             int validFlightCount = 0;
 
             for (int i = 0; i < flightNumbers.length; i++) {
-                if (flightNumbers[i] > 0) { // Only process non-zero flight numbers
+                if (flightNumbers[i] > 0) { // only process non-zero flight numbers
                     double fare = getFlightFare(con, bookRes.getAirlineID(), flightNumbers[i], bookRes.getSeatClass());
                     
                     if (fare == 0.0) {

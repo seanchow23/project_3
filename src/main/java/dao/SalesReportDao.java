@@ -10,7 +10,7 @@ public class SalesReportDao {
     /* Database Constants - UPDATE PASSWORD HERE */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change as necessary 
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -21,7 +21,7 @@ public class SalesReportDao {
         
         List<SalesReport> sales = new ArrayList<SalesReport>();
         
-        /* * Query joins Reservation -> Customer -> Person to get the Customer Name 
+        /* * query joins Reservation -> customer -> person to get the Customer Name 
          * alongside the financial details for the specific Month/Year.
          */
         String sql = "SELECT R.ResrNo, R.ResrDate, R.TotalFare, R.BookingFee, R.RepSSN, P.FirstName, P.LastName " +

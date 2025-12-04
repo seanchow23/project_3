@@ -10,7 +10,7 @@ public class FlightReservationsDao {
     /* Database Constants - UPDATE PASSWORD HERE */
     private static final String URL = "jdbc:mysql://localhost:3306/project_2";
     private static final String USER = "root";
-    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+    private static final String PASSWORD = "Master442713"; // <--- change as necessary 
 
     private Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -49,7 +49,7 @@ public class FlightReservationsDao {
 
             if (isByCustomer) {
                 st.setString(1, CustomerName);
-                st.setString(2, CustomerName); // Check both first and last name
+                st.setString(2, CustomerName); // check both first and last name
             } else {
                 st.setString(1, airlineID);
                 st.setInt(2, FlightNum);
@@ -247,12 +247,12 @@ public class FlightReservationsDao {
     public String cancelReservation(int resrNo) {
         /*
          * Implements Transaction 3.3.3: Cancel Reservation
-         * Must delete children (ReservationPassenger, Includes) before parent (Reservation).
+         * we  delete children (ReservationPassenger, Includes) before parent (Reservation).
          */
         Connection con = null;
         try {
             con = getConnection();
-            con.setAutoCommit(false); // Start Transaction
+            con.setAutoCommit(false); // start Transaction
 
             // 1. Delete Passengers
             String delResPass = "DELETE FROM ReservationPassenger WHERE ResrNo = ?";

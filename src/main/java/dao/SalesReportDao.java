@@ -1,41 +1,74 @@
 package dao;
 
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-
 import model.SalesReport;
 
 public class SalesReportDao {
-	
-	public List<SalesReport> getSalesReport(String month, String year) {
-		
-		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to get sales report for a particular month must be implemented using month and year passed
-		 */
-		
-		
-		List<SalesReport> sales = new ArrayList<SalesReport>();
-			
-		/*Sample data begins*/
-		for (int i = 0; i < 4; i++) {
-			SalesReport sale = new SalesReport();
-			
-			sale.setResrNo(1);
-			sale.setResrDate("2011-01-01");
-			sale.setTotalFare(100);
-			sale.setBookingFee(10.1);
-			sale.setRepSSN("631891987");
-			sale.setFirstName("John");
-			sale.setLastName("LastName");
-				
-			sales.add(sale);
-				
-		}
-		/*Sample data ends*/
-						
-		return sales;
-		
-	}
 
+    /* Database Constants - UPDATE PASSWORD HERE */
+    private static final String URL = "jdbc:mysql://localhost:3306/project_2";
+    private static final String USER = "root";
+    private static final String PASSWORD = "Master442713"; // <--- UPDATE THIS
+
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+    
+    public List<SalesReport> getSalesReport(String month, String year) {
+        
+        List<SalesReport> sales = new ArrayList<SalesReport>();
+        
+        /* * Query joins Reservation -> Customer -> Person to get the Customer Name 
+         * alongside the financial details for the specific Month/Year.
+         */
+        String sql = "SELECT R.ResrNo, R.ResrDate, R.TotalFare, R.BookingFee, R.RepSSN, P.FirstName, P.LastName " +
+                     "FROM Reservation R " +
+                     "JOIN Customer C ON R.AccountNo = C.AccountNo " +
+                     "JOIN Person P ON C.Id = P.Id " +
+                     "WHERE MONTH(R.ResrDate) = ? AND YEAR(R.ResrDate) = ? " +
+                     "ORDER BY R.ResrDate DESC";
+            
+        try (Connection con = getConnection();
+             PreparedStatement st = con.prepareStatement(sql)) {
+            
+            // Convert String inputs to Integer for the SQL functions
+            st.setInt(1, Integer.parseInt(month));
+            st.setInt(2, Integer.parseInt(year));
+            
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    SalesReport sale = new SalesReport();
+                    
+                    sale.setResrNo(rs.getInt("ResrNo"));
+                    sale.setResrDate(rs.getString("ResrDate"));
+                    sale.setTotalFare(rs.getDouble("TotalFare"));
+                    sale.setBookingFee(rs.getDouble("BookingFee"));
+                    
+                    // Handle RepSSN (might be NULL for online bookings)
+                    int repSSN = rs.getInt("RepSSN");
+                    if (rs.wasNull()) {
+                        sale.setRepSSN("Online");
+                    } else {
+                        sale.setRepSSN(String.valueOf(repSSN));
+                    }
+                    
+                    sale.setFirstName(rs.getString("FirstName"));
+                    sale.setLastName(rs.getString("LastName"));
+                        
+                    sales.add(sale);
+                }
+            }
+            
+        } catch (NumberFormatException e) {
+            System.out.println("Error: Invalid Month/Year format.");
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+                        
+        return sales;
+    }
 }
